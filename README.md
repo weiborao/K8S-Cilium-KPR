@@ -8,3 +8,6 @@ The automation codes to install and setup K8S and Cilium.
 5. Application Deployment and Testing: Demonstrates deploying a Star Wars demo application provided by Isovalent and how to capture network packets (Pod to Pod, Pod to External) and visualize network flows using Hubble UI.
 6. Automation of K8S and Cilium Installation: Discusses steps to fully automate the entire installation process, including setting up passwordless SSH login between Kubernetes nodes.
 7. Common Kubectl Commands: Provides a list of frequently used kubectl commands for managing the cluster.
+
+Detail tutorial please refer to:
+https://weiborao.link/K8S-Cilium-Replace-kube-proxy.html
