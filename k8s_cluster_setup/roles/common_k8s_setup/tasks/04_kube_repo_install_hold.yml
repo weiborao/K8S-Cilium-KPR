@@ -1,0 +1,48 @@
+---
+- name: Create Kubernetes apt keyring directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Kubernetes GPG key and dearmor
+  ansible.builtin.shell: |
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  changed_when: false # This command is idempotent enough for our purposes
+
+- name: Add Kubernetes APT repository source list
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/kubernetes.list
+    content: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /\n"
+    mode: '0644'
+    backup: yes
+
+- name: Update apt cache after adding Kubernetes repo
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Install kubelet, kubeadm, kubectl
+  ansible.builtin.apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+    update_cache: yes # Ensure apt cache is updated after adding repo.
+
+- name: Hold kubelet, kubeadm, kubectl packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl
+
+- name: Enable and start kubelet service
+  ansible.builtin.systemd:
+    name: kubelet
+    state: started
+    enabled: yes

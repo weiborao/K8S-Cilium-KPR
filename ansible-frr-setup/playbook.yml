@@ -1,0 +1,6 @@
+---
+- name: Install and Configure FRRouting (FRR)
+  hosts: frr_nodes
+  become: yes
+  roles:
+    - frr_setup # Changed role name to frr_setup

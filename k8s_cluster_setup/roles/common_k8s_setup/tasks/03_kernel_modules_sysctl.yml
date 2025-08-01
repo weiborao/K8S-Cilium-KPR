@@ -1,0 +1,31 @@
+---
+- name: Load overlay module
+  ansible.builtin.command: modprobe overlay
+  args:
+    creates: /sys/module/overlay # Check if module is loaded
+  changed_when: false
+
+- name: Load br_netfilter module
+  ansible.builtin.command: modprobe br_netfilter
+  args:
+    creates: /sys/module/br_netfilter # Check if module is loaded
+  changed_when: false
+
+- name: Add modules to /etc/modules-load.d/k8s.conf
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      overlay
+      br_netfilter
+
+- name: Configure sysctl parameters for Kubernetes networking
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/k8s.conf
+    content: |
+      net.bridge.bridge-nf-call-iptables = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.ipv4.ip_forward = 1
+
+- name: Apply sysctl parameters
+  ansible.builtin.command: sysctl --system
+  changed_when: false

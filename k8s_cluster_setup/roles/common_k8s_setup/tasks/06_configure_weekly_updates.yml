@@ -1,0 +1,10 @@
+---
+- name: Configure weekly apt update and upgrade cron job
+  ansible.builtin.cron:
+    name: "weekly apt update and upgrade"
+    weekday: "0" # Sunday
+    hour: "3"    # 3 AM
+    minute: "0"
+    job: "/usr/bin/apt update && /usr/bin/apt upgrade -y && /usr/bin/apt autoremove -y && /usr/bin/apt clean"
+    user: root
+    state: present

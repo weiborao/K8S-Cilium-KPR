@@ -1,0 +1,20 @@
+# This file is managed by Ansible. Do not edit manually.
+
+# Do not read /etc/resolv.conf, use the servers below
+no-resolv
+
+# Specify upstream DNS servers for forwarding
+server={{ dns_forwarder_1 }}
+server={{ dns_forwarder_2 }}
+
+# Listen on localhost and the VM's primary IP
+listen-address=127.0.0.1,{{ vm_ip }}
+
+# Allow queries from any interface
+interface={{ ansible_default_ipv4.interface }} # Listen on the primary network interface
+
+# Bind to the interfaces to prevent dnsmasq from listening on all interfaces
+bind-interfaces
+
+# Cache DNS results
+cache-size=150

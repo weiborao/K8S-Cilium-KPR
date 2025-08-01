@@ -1,0 +1,57 @@
+---
+apiVersion: cilium.io/v2alpha1
+kind: CiliumBGPAdvertisement
+metadata:
+  name: bgp-advertisements
+  labels:
+    advertise: bgp
+spec:
+  advertisements:
+    - advertisementType: "PodCIDR"              # Only for Kubernetes or ClusterPool IPAM cluster-pool
+    - advertisementType: "Service"
+      service:
+        addresses:
+          - ClusterIP
+          - ExternalIP
+          #- LoadBalancerIP
+      selector:
+        matchExpressions:
+        - {key: somekey, operator: NotIn, values: ['never-used-value']} 
+
+---
+apiVersion: cilium.io/v2alpha1
+kind: CiliumBGPPeerConfig
+metadata:
+  name: cilium-peer
+spec:
+  timers:
+    holdTimeSeconds: 30             #default 90s
+    keepAliveTimeSeconds: 10  #default 30s
+    connectRetryTimeSeconds: 40  #default 120s
+  gracefulRestart:
+    enabled: true
+    restartTimeSeconds: 120        #default 120s
+  #transport:
+  #  peerPort: 179
+  families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: "bgp"
+
+---
+apiVersion: cilium.io/v2alpha1
+kind: CiliumBGPClusterConfig
+metadata:
+  name: cilium-bgp-default
+spec:
+  bgpInstances:
+  - name: "instance-65000"
+    localASN: 65000
+    peers:
+    - name: "FRR_BGP"
+      peerASN: 65000
+      peerAddress: 10.75.59.76
+      peerConfigRef:
+        name: "cilium-peer"

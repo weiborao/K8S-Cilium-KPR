@@ -1,0 +1,60 @@
+---
+- name: Install FRRouting (FRR)
+  ansible.builtin.apt:
+    name: frr
+    state: present
+    update_cache: yes
+
+- name: Configure FRR daemons (enable zebra and bgpd)
+  ansible.builtin.lineinfile:
+    path: /etc/frr/daemons
+    regexp: '^(zebra|bgpd)='
+    line: '\1=yes'
+    state: present
+    backrefs: yes # Required to make regexp work for replacement
+  notify: Restart FRR service
+
+- name: Configure frr.conf
+  ansible.builtin.copy:
+    dest: /etc/frr/frr.conf
+    content: |
+      !
+      hostname {{ ansible_hostname }}
+      password zebra
+      enable password zebra
+      !
+      log syslog informational
+      !
+      router bgp {{ FRR_AS }}
+       bgp router-id {{ ansible_host }}
+       !
+       neighbor {{ K8S_MASTER_IP }} remote-as {{ CILIUM_BGP_AS }}
+       neighbor {{ K8S_WORKER_1_IP }} remote-as {{ CILIUM_BGP_AS }}
+       neighbor {{ K8S_WORKER_2_IP }} remote-as {{ CILIUM_BGP_AS }}
+       !
+       address-family ipv4 unicast
+        # Crucial: Redistribute BGP learned routes into the kernel
+        redistribute connected
+        redistribute static
+        redistribute kernel
+       exit-address-family
+      !
+      line vty
+      !
+    mode: '0644'
+  notify: Restart FRR service # Handler only runs if file content changes
+
+- name: Set permissions for frr.conf
+  ansible.builtin.file:
+    path: /etc/frr/frr.conf
+    owner: frr
+    group: frr
+    mode: '0640'
+
+- name: Enable and start FRR service
+  ansible.builtin.systemd:
+    name: frr
+    state: started
+    enabled: yes
+    daemon_reload: yes # Ensure systemd reloads unit files if service file changed
+

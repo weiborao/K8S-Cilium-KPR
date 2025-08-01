@@ -1,0 +1,24 @@
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: false
+ipam:
+  mode: kubernetes
+ipv4NativeRoutingCIDR: 172.16.0.0/20
+k8s:
+  requireIPv4PodCIDR: true
+routingMode: native
+autoDirectNodeRoutes: true
+enableIPv4Masquerade: true
+bgpControlPlane:
+  enabled: true
+  announce:
+    podCIDR: true
+kubeProxyReplacement: true
+bpf:
+  masquerade: true
+  lb:
+    externalClusterIP: true
+    sock: true

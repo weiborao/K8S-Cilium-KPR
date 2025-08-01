@@ -1,0 +1,12 @@
+---
+- name: Add all inventory hosts to /etc/hosts on each node
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "^{{ hostvars[item]['ansible_host'] }}\\s+{{ item }}" # Fixed: \\s for escaped backslash in regex
+    line: "{{ hostvars[item]['ansible_host'] }} {{ item }}"
+    state: present
+    create: yes
+    mode: '0644'
+    owner: root
+    group: root
+  loop: "{{ groups['all'] }}" # Loop over all hosts defined in the inventory

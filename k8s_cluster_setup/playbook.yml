@@ -1,0 +1,6 @@
+---
+- name: Common Kubernetes Setup for all nodes
+  hosts: all
+  become: yes
+  roles:
+    - common_k8s_setup

@@ -1,0 +1,36 @@
+---
+- name: Generate SSH key on kube-node-1 and distribute to other nodes
+  hosts: kubernetes_nodes
+  become: yes
+
+  tasks:
+    - name: Generate SSH key on kube-node-1
+      ansible.builtin.command:
+        cmd: ssh-keygen -t rsa -b 4096 -N "" -f /root/.ssh/id_rsa
+        creates: /root/.ssh/id_rsa
+      when: inventory_hostname == 'kube-node-1'
+
+    - name: Ensure .ssh directory exists on all nodes
+      ansible.builtin.file:
+        path: /root/.ssh
+        state: directory
+        mode: '0700'
+
+    - name: Ensure authorized_keys file exists
+      ansible.builtin.file:
+        path: /root/.ssh/authorized_keys
+        state: touch
+        mode: '0600'
+
+    - name: Fetch public key from kube-node-1
+      ansible.builtin.slurp:
+        src: /root/.ssh/id_rsa.pub
+      register: ssh_public_key
+      when: inventory_hostname == 'kube-node-1'
+
+    - name: Distribute public key to kube-node-2 and kube-node-3
+      ansible.builtin.lineinfile:
+        path: /root/.ssh/authorized_keys
+        line: "{{ hostvars['kube-node-1']['ssh_public_key']['content'] | b64decode }}"
+        state: present
+      when: inventory_hostname in ['kube-node-2', 'kube-node-3']

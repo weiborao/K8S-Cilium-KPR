@@ -1,0 +1,66 @@
+---
+- name: Update DNS server on Kubernetes nodes to use local DNS only
+  hosts: kubernetes_nodes
+  become: yes # This allows Ansible to run commands with sudo privileges
+
+  tasks:
+    - name: Ensure netplan configuration directory exists
+      ansible.builtin.file:
+        path: /etc/netplan
+        state: directory
+        mode: '0755'
+
+    - name: Get current network configuration file (e.g., 00-installer-config.yaml)
+      ansible.builtin.find:
+        paths: /etc/netplan
+        patterns: '*.yaml'
+        # We assume there's only one primary netplan config file for simplicity.
+        # If there are multiple, you might need to specify which one.
+      register: netplan_files
+
+    - name: Set network config file variable
+      ansible.builtin.set_fact:
+        netplan_config_file: "{{ netplan_files.files[0].path }}"
+      when: netplan_files.files | length > 0
+
+    - name: Fail if no netplan config file found
+      ansible.builtin.fail:
+        msg: "No Netplan configuration file found in /etc/netplan. Cannot proceed."
+      when: netplan_files.files | length == 0
+
+    - name: Read current netplan configuration
+      ansible.builtin.slurp:
+        src: "{{ netplan_config_file }}"
+      register: current_netplan_config
+
+    - name: Parse current netplan configuration
+      ansible.builtin.set_fact:
+        parsed_netplan: "{{ current_netplan_config['content'] | b64decode | from_yaml }}"
+
+    - name: Update nameservers in netplan configuration to local DNS only
+      ansible.builtin.set_fact:
+        updated_netplan: "{{ parsed_netplan | combine(
+            {
+              'network': {
+                'ethernets': {
+                  'enp1s0': {
+                    'nameservers': {
+                      'addresses': ['10.75.59.76'],
+                      'search': ['cisco.com']
+                    }
+                  }
+                }
+              }
+            }, recursive=True) }}"
+
+    - name: Write updated netplan configuration
+      ansible.builtin.copy:
+        content: "{{ updated_netplan | to_yaml }}"
+        dest: "{{ netplan_config_file }}"
+        mode: '0600'
+      notify: Apply Netplan Configuration
+
+  handlers:
+    - name: Apply Netplan Configuration
+      ansible.builtin.command: netplan apply
+      listen: "Apply Netplan Configuration"

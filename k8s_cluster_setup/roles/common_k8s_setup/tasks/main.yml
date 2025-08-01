@@ -1,0 +1,21 @@
+---
+- name: Include add hosts entries task
+  ansible.builtin.include_tasks: 00_add_hosts_entries.yml
+
+- name: Include disable swap task
+  ansible.builtin.include_tasks: 01_disable_swap.yml
+
+- name: Include containerd setup task
+  ansible.builtin.include_tasks: 02_containerd_setup.yml
+
+- name: Include kernel modules and sysctl task
+  ansible.builtin.include_tasks: 03_kernel_modules_sysctl.yml
+
+- name: Include kube repo, install, and hold task
+  ansible.builtin.include_tasks: 04_kube_repo_install_hold.yml
+
+- name: Include initial apt upgrade task
+  ansible.builtin.include_tasks: 05_initial_upgrade.yml
+
+- name: Include configure weekly updates task
+  ansible.builtin.include_tasks: 06_configure_weekly_updates.yml

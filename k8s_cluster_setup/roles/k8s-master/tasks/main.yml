@@ -1,0 +1,4 @@
+---
+- name: This role is intentionally skipped by the main playbook for manual setup.
+  ansible.builtin.debug:
+    msg: "This master role is not executed by default. Run 'kubeadm init' manually on the master node."

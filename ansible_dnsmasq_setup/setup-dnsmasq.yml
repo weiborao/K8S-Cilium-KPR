@@ -1,0 +1,66 @@
+---
+- name: Configure DNSmasq Server on Ubuntu VM
+  hosts: dns_server
+  become: yes # Run tasks with sudo privileges
+  vars:
+    dns_forwarder_1: "64.104.76.247"
+    dns_forwarder_2: "64.104.14.184"
+    vm_ip: "10.75.59.76"
+    search_domain: "cisco.com"
+
+  tasks:
+    - name: Ensure apt cache is updated
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600 # Cache for 1 hour
+
+    - name: Install dnsmasq package
+      ansible.builtin.apt:
+        name: dnsmasq
+        state: present
+
+    - name: Stop dnsmasq service before configuration
+      ansible.builtin.systemd:
+        name: dnsmasq
+        state: stopped
+      ignore_errors: yes # Ignore if it's not running initially
+
+    - name: Backup original dnsmasq.conf
+      ansible.builtin.command: mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
+      args:
+        removes: /etc/dnsmasq.conf # Only run if dnsmasq.conf exists
+      ignore_errors: yes
+
+    - name: Configure dnsmasq for forwarding
+      ansible.builtin.template:
+        src: dnsmasq.conf.j2
+        dest: /etc/dnsmasq.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart dnsmasq
+
+    - name: Set VM's /etc/resolv.conf to point to itself (local DNS)
+      ansible.builtin.template:
+        src: resolv.conf.j2
+        dest: /etc/resolv.conf
+        owner: root
+        group: root
+        mode: '0644'
+      vars:
+        local_dns_ip: "127.0.0.1" # dnsmasq listens on 127.0.0.1
+        # Removed: search_domain: "{{ search_domain }}" - it's already available from play vars
+      notify: Restart systemd-resolved # Or NetworkManager, depending on Ubuntu version
+
+  handlers:
+    - name: Restart dnsmasq
+      ansible.builtin.systemd:
+        name: dnsmasq
+        state: restarted
+        enabled: yes # Ensure it's enabled to start on boot
+
+    - name: Restart systemd-resolved
+      ansible.builtin.systemd:
+        name: systemd-resolved
+        state: restarted
+      ignore_errors: yes # systemd-resolved might not be used on server installs

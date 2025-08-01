@@ -1,0 +1,4 @@
+---
+- name: This role is intentionally skipped by the main playbook for manual setup.
+  ansible.builtin.debug:
+    msg: "This worker role is not executed by default. Run 'kubeadm join' manually on worker nodes."

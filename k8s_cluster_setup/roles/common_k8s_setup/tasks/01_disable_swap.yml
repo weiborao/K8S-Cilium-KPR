@@ -1,0 +1,17 @@
+---
+- name: Check if swap is active
+  ansible.builtin.command: swapon --show
+  register: swap_check_result
+  changed_when: false # This command itself doesn't change state
+  failed_when: false  # Don't fail if swapon --show returns non-zero (e.g., no swap enabled)
+
+- name: Disable swap
+  ansible.builtin.command: swapoff -a
+  when: swap_check_result.rc == 0 # Only run if swapon --show indicated swap is active
+
+- name: Persistently disable swap (comment out swapfile in fstab)
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^(/swapfile.*)$'
+    replace: '#\1'
+  when: swap_check_result.rc == 0 # Only run if swap was found to be active

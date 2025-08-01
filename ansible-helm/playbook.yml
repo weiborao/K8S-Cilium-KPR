@@ -1,0 +1,8 @@
+---
+- name: Install Helm on Kubernetes Master Node
+  hosts: kubernetes_master
+  become: yes
+  environment: # Ensure KUBECONFIG is set for helm commands run with become
+    KUBECONFIG: /etc/kubernetes/admin.conf # Use the admin kubeconfig on the master
+  roles:
+    - helm_install
